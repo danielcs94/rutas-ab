@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rutas A→B</title>
+  <meta name="description" content="Rutas de running aleatorias de un punto A a un punto B (o en bucle), de hasta 42 km.">
+  <!-- App en el móvil: "Añadir a pantalla de inicio" la abre a pantalla completa con su icono -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Rutas A→B">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
+  <link rel="stylesheet" href="css/styles.css?v=202610132210">
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <header class="brand">
+        <div>
+          <p class="eyebrow">De cualquier punto A a cualquier punto B</p>
+          <h1>Rutas A→B</h1>
+          <p class="sub">Rutas aleatorias para correr entre dos puntos, o en bucle, buscando parques y paseos peatonales. Hasta 42 km.</p>
+        </div>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema">◐</button>
+      </header>
+
+      <form class="controls" id="controls">
+        <fieldset class="field points">
+          <legend>Recorrido</legend>
+          <div class="point">
+            <span class="point-tag" aria-hidden="true">A</span>
+            <div class="point-main">
+              <label class="sr-only" for="a-input">Punto de salida</label>
+              <input id="a-input" type="search" autocomplete="off" spellcheck="false" placeholder="Salida: busca una calle o un sitio">
+              <ul class="suggestions" id="a-suggest" hidden></ul>
+            </div>
+            <button type="button" class="icon-btn" id="a-locate" title="Usar mi ubicación" aria-label="Usar mi ubicación como salida">◎</button>
+            <button type="button" class="icon-btn" id="a-pick" title="Elegir A en el mapa" aria-label="Elegir la salida en el mapa" aria-pressed="false">⌖</button>
+          </div>
+          <div class="point">
+            <span class="point-tag point-tag-b" aria-hidden="true">B</span>
+            <div class="point-main">
+              <label class="sr-only" for="b-input">Punto de llegada</label>
+              <input id="b-input" type="search" autocomplete="off" spellcheck="false" placeholder="Llegada (vacío = volver a A)">
+              <ul class="suggestions" id="b-suggest" hidden></ul>
+            </div>
+            <button type="button" class="icon-btn" id="b-clear" title="Quitar B (ruta en bucle)" aria-label="Quitar el punto de llegada" hidden>✕</button>
+            <button type="button" class="icon-btn" id="b-pick" title="Elegir B en el mapa" aria-label="Elegir la llegada en el mapa" aria-pressed="false">⌖</button>
+          </div>
+          <div class="points-foot">
+            <p class="hint" id="points-hint"></p>
+            <button type="button" class="link-btn" id="swap">Intercambiar A y B</button>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <div class="field-head">
+            <label for="km">Distancia</label>
+            <output id="km-out" for="km"><b>10.0</b> km</output>
+          </div>
+          <input type="range" id="km" min="1" max="42" step="0.1" value="10">
+          <div class="range-scale"><span>1 km</span><span>42 km · maratón</span></div>
+          <div class="chips km-quick" id="km-quick" aria-label="Distancias habituales"></div>
+        </div>
+
+        <fieldset class="field">
+          <legend>Intensidad</legend>
+          <div class="segmented" id="intensity"></div>
+          <p class="hint" id="intensity-hint"></p>
+        </fieldset>
+
+        <button class="primary" id="generate" type="submit">Generar ruta</button>
+        <p class="hint center">Cada vez sale una ruta distinta entre A y B.</p>
+        <div class="progress" id="progress" hidden>
+          <div class="bar"><span id="progress-bar"></span></div>
+          <p id="progress-text">Calculando…</p>
+        </div>
+        <p class="error" id="error" role="alert" hidden></p>
+      </form>
+
+      <section class="result" id="result" hidden>
+        <div class="result-head">
+          <p class="eyebrow" id="r-zone"></p>
+          <h2 id="r-name"></h2>
+        </div>
+
+        <div class="stats">
+          <div class="stat hero"><span class="v" id="r-km"></span><span class="l">distancia exacta</span></div>
+          <div class="stat"><span class="v" id="r-gain"></span><span class="l">desnivel +</span></div>
+          <div class="stat"><span class="v" id="r-time"></span><span class="l">tiempo estimado</span></div>
+          <div class="stat"><span class="v" id="r-signals"></span><span class="l">semáforos</span></div>
+        </div>
+
+        <div class="block">
+          <h3>Superficie</h3>
+          <div id="r-surface"></div>
+          <p class="hint" id="r-overlap"></p>
+        </div>
+
+        <div class="block">
+          <h3>Perfil de elevación</h3>
+          <div class="profile" id="r-profile"></div>
+        </div>
+
+        <div class="block">
+          <h3>Sesión · <span id="r-intensity"></span></h3>
+          <p class="workout" id="r-workout"></p>
+        </div>
+
+        <div class="block">
+          <h3>Por dónde pasa</h3>
+          <ol class="waypoints" id="r-waypoints"></ol>
+        </div>
+
+        <div class="actions">
+          <a class="primary" id="r-gmaps" target="_blank" rel="noopener">Abrir en Google Maps</a>
+          <button class="secondary" id="r-gpx" type="button">Descargar GPX</button>
+          <button class="secondary" id="r-copy" type="button">Copiar enlace</button>
+        </div>
+        <p class="note">El enlace de Google Maps lleva los mismos puntos de paso (1, 2, 3), pero Google recalcula el camino entre ellos. Para seguir la ruta exacta, usa el GPX en Strava, Garmin o Komoot.</p>
+      </section>
+
+      <section class="list-section" id="alternatives" hidden>
+        <h3>Alternativas</h3>
+        <div class="cards" id="alt-list"></div>
+      </section>
+
+      <section class="list-section" id="history" hidden>
+        <div class="list-head">
+          <h3>Historial</h3>
+          <button class="link-btn" id="history-clear" type="button">Borrar</button>
+        </div>
+        <div class="cards" id="history-list"></div>
+      </section>
+
+      <footer class="foot">
+        Rutas a pie, desnivel y superficie: Valhalla (FOSSGIS) · Búsqueda: Nominatim · Mapa: OpenFreeMap. Datos © colaboradores de OpenStreetMap.
+      </footer>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="map" aria-label="Mapa de la ruta"></div>
+      <div class="map-empty" id="map-empty">
+        <p>Elige A, B y la distancia, y pulsa <b>Generar ruta</b>.</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.js"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "./js/api.js": "./js/api.js?v=202610132210",
+    "./js/app.js": "./js/app.js?v=202610132210",
+    "./js/config.js": "./js/config.js?v=202610132210",
+    "./js/geo.js": "./js/geo.js?v=202610132210",
+    "./js/map.js": "./js/map.js?v=202610132210",
+    "./js/mapstyle.js": "./js/mapstyle.js?v=202610132210",
+    "./js/planner.js": "./js/planner.js?v=202610132210",
+    "./js/profile.js": "./js/profile.js?v=202610132210"
+  }
+}
+  </script>
+  <script type="module" src="js/app.js?v=202610132210"></script>
+</body>
+</html>
