@@ -156,7 +156,7 @@ export async function edgesAlong(coords) {
     shape_match: 'map_snap',
     costing: 'pedestrian',
     filters: {
-      attributes: ['edge.use', 'edge.surface', 'edge.length', 'edge.traffic_signal', 'edge.begin_shape_index', 'edge.end_shape_index', 'shape'],
+      attributes: ['edge.names', 'edge.use', 'edge.surface', 'edge.length', 'edge.traffic_signal', 'edge.begin_shape_index', 'edge.end_shape_index', 'shape'],
       action: 'include',
     },
   }, { timeout: 30000 });
@@ -168,12 +168,15 @@ export async function edgesAlong(coords) {
 // Búsqueda de direcciones (Nominatim: máximo 1 petición por segundo)
 // ---------------------------------------------------------------------------
 const nominatimOpts = { gap: 1100, retries: 2, timeout: 12000 };
+// Nombres en el idioma del navegador (con español de reserva): en Tokio o en Lisboa los
+// resultados salen como los conoce quien usa la app.
+const LANGS = [...new Set([...(navigator.languages ?? []), 'es'])].join(',');
 
 // Busca en todo el mundo. Si se pasa `near` ({lat, lon}), da prioridad a los resultados de
 // alrededor (unos 70 km), sin excluir el resto: "Plaza Mayor" encuentra la de tu ciudad, y
 // "Córdoba, Argentina" sigue funcionando aunque el otro punto esté en Madrid.
 export async function searchPlaces(query, near = null) {
-  const params = new URLSearchParams({ q: query, format: 'jsonv2', limit: '6', 'accept-language': 'es' });
+  const params = new URLSearchParams({ q: query, format: 'jsonv2', limit: '6', 'accept-language': LANGS });
   if (near) {
     const d = 0.6;
     params.set('viewbox', `${near.lon - d},${near.lat + d},${near.lon + d},${near.lat - d}`);
@@ -187,8 +190,19 @@ export async function searchPlaces(query, near = null) {
   }));
 }
 
+// Centro aproximado de una ciudad (para situar el mapa la primera vez sin pedir la ubicación).
+// Búsqueda estructurada: con el país aparte no hay confusión entre Córdoba (Argentina) y Córdoba (España).
+// `countryCode` (ISO, p. ej. 'ar') sale de la región del idioma del navegador ("es-AR").
+export async function locateCity(city, { country = '', countryCode = '' } = {}) {
+  const params = new URLSearchParams({ city, format: 'jsonv2', limit: '1', 'accept-language': LANGS });
+  if (countryCode) params.set('countrycodes', countryCode);
+  else if (country) params.set('country', country);
+  const [r] = await fetchJSON(`${NOMINATIM}/search?${params}`, {}, nominatimOpts);
+  return r ? { lat: Number(r.lat), lon: Number(r.lon) } : null;
+}
+
 export async function placeName(lat, lon) {
-  const params = new URLSearchParams({ lat, lon, format: 'jsonv2', zoom: '17', 'accept-language': 'es' });
+  const params = new URLSearchParams({ lat, lon, format: 'jsonv2', zoom: '17', 'accept-language': LANGS });
   try {
     const r = await fetchJSON(`${NOMINATIM}/reverse?${params}`, {}, nominatimOpts);
     const a = r.address ?? {};

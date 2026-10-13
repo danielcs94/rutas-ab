@@ -1,7 +1,7 @@
 // Interfaz: puntos A y B, controles, generación, resultado, alternativas e historial.
 import { MAX_KM, MIN_KM, DEFAULT_A, LOOP_RADIUS_KM, INTENSITIES } from './config.js';
 import { plan, googleMapsUrl, toGpx } from './planner.js';
-import { routeFoot, searchPlaces, placeName } from './api.js';
+import { routeFoot, searchPlaces, placeName, locateCity } from './api.js';
 import { haversine } from './geo.js';
 import { createMap } from './map.js';
 import { renderProfile } from './profile.js';
@@ -35,12 +35,16 @@ const store = {
   },
 };
 
-const saved = store.get(POINTS_KEY, {});
+// Primera visita: en España se parte de Noviciado para poder probarla al instante; en el resto
+// del mundo A empieza vacío y el mapa se centra en la ciudad de la zona horaria del navegador.
+const TIME_ZONE = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone ?? ''; } catch { return ''; } })();
+const IN_SPAIN = /^(Europe\/Madrid|Atlantic\/Canary|Africa\/Ceuta)$/.test(TIME_ZONE);
+const saved = store.get(POINTS_KEY, null);
 const state = {
   km: 10,
   intensity: 'medio',
-  A: saved.A ?? { ...DEFAULT_A },
-  B: saved.B ?? null,
+  A: saved ? saved.A ?? null : IN_SPAIN ? { ...DEFAULT_A } : null,
+  B: saved?.B ?? null,
   pick: null,            // 'A' | 'B' mientras se elige un punto tocando el mapa
   directKm: null,
   candidates: [],
@@ -57,7 +61,7 @@ if (savedTheme) document.documentElement.dataset.theme = savedTheme;
 
 // Si el mapa no puede arrancar (WebGL desactivado, librería sin cargar…), la app sigue
 // funcionando sin él: se generan rutas y se abren en Google Maps o se descarga el GPX.
-const noMap = { setTheme() {}, draw() {}, fit() {}, hover() {}, invalidate() {}, setEndpoints() {}, onClick() {}, setPicking() {} };
+const noMap = { setTheme() {}, draw() {}, fit() {}, hover() {}, invalidate() {}, setEndpoints() {}, onClick() {}, setPicking() {}, centerOn() {}, getCenter: () => null };
 let mapView = noMap;
 try {
   mapView = createMap($('map'), effectiveTheme());
@@ -82,7 +86,7 @@ $('theme-toggle').addEventListener('click', () => {
 // ---------------------------------------------------------------------------
 // Puntos A y B
 // ---------------------------------------------------------------------------
-const isLoop = () => !state.B || haversine([state.A.lat, state.A.lon], [state.B.lat, state.B.lon]) < LOOP_RADIUS_KM * 1000;
+const isLoop = () => !state.A || !state.B || haversine([state.A.lat, state.A.lon], [state.B.lat, state.B.lon]) < LOOP_RADIUS_KM * 1000;
 
 let directToken = 0;
 async function setPoints({ fit = true } = {}) {
@@ -93,6 +97,11 @@ async function setPoints({ fit = true } = {}) {
   mapView.setEndpoints(state.A, state.B, { fit: fit && !state.current });
 
   state.directKm = null;
+  $('generate').disabled = !state.A;
+  if (!state.A) {
+    $('points-hint').textContent = 'Elige tu salida: pulsa ◎ para usar tu ubicación, búscala o toca el mapa (⌖).';
+    return;
+  }
   if (isLoop()) {
     $('points-hint').textContent = 'Sin punto B: la ruta sale de A y vuelve a A.';
     return;
@@ -135,7 +144,7 @@ function setupSearch(which) {
     list.innerHTML = '<li class="muted">Buscando…</li>';
     try {
       const other = which === 'A' ? state.B : state.A;
-      const results = await searchPlaces(q, other ?? state[which]);
+      const results = await searchPlaces(q, other ?? state[which] ?? mapView.getCenter());
       if (my !== token) return;
       list.innerHTML = results.length
         ? results.map((r, i) => `<li><button type="button" data-i="${i}"><b>${r.name}</b><span>${r.detail}</span></button></li>`).join('')
@@ -205,7 +214,7 @@ $('a-locate').addEventListener('click', () => {
 });
 
 $('swap').addEventListener('click', () => {
-  if (!state.B) return;
+  if (!state.A || !state.B) return;
   [state.A, state.B] = [state.B, state.A];
   setPoints();
 });
@@ -255,6 +264,7 @@ $('controls').addEventListener('submit', async (e) => {
   $('error').hidden = true;
   $('progress').hidden = false;
   try {
+    if (!state.A) throw new Error('Elige primero el punto de salida (A).');
     const { candidates } = await plan({
       A: state.A,
       B: isLoop() ? null : state.B,
@@ -445,3 +455,19 @@ new ResizeObserver(() => {
 renderControls();
 renderHistory();
 setPoints();
+
+// Sin puntos guardados y fuera de España: centra el mapa en la ciudad de la zona horaria
+// ("America/Cordoba" + idioma "es-AR" → Córdoba en Argentina), sin pedir permiso de ubicación.
+// El país sale de la región del idioma: los navegadores acortan muchas zonas horarias
+// ("America/Argentina/Cordoba" llega como "America/Cordoba") y sin país gana la Córdoba española.
+if (!state.A && TIME_ZONE.includes('/')) {
+  const parts = TIME_ZONE.replace(/_/g, ' ').split('/');
+  const region = (navigator.languages ?? [navigator.language]).map((l) => l?.split('-')[1]).find((r) => r && r.length === 2);
+  locateCity(parts.at(-1), { country: parts.length > 2 ? parts[1] : '', countryCode: region?.toLowerCase() ?? '' })
+    .then((p) => { if (p && !state.A) mapView.centerOn(p.lat, p.lon, 12); })
+    .catch(() => {});
+}
+if (!state.A) {
+  $('map-empty').hidden = false;
+  $('map-empty').innerHTML = '<p>Elige tu salida: pulsa <b>◎</b> para usar tu ubicación, búscala o toca el mapa.</p>';
+}

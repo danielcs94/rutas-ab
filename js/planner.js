@@ -183,7 +183,22 @@ async function addSurface(c) {
     from: cum[e.begin_shape_index ?? 0] / total,
     to: cum[e.end_shape_index ?? 0] / total,
     cat: classify(e),
+    name: e.names?.[0] ?? null,
+    km: e.length ?? 0,
+    at: shape[Math.min(shape.length - 1, e.begin_shape_index ?? 0)],
   }));
+  // Calles y paseos con nombre, por kilómetros recorridos en cada uno (sirven en cualquier ciudad)
+  const streets = new Map();
+  let unnamedGreenKm = 0;
+  for (const sp of spans) {
+    if (!sp.name) { if (sp.cat !== 'asfalto') unnamedGreenKm += sp.km; continue; }
+    const st = streets.get(sp.name) ?? { name: sp.name, km: 0, greenKm: 0, f: sp.from, at: sp.at };
+    st.km += sp.km;
+    if (sp.cat !== 'asfalto') st.greenKm += sp.km;
+    streets.set(sp.name, st);
+  }
+  c.streets = [...streets.values()];
+  c.unnamedGreenKm = unnamedGreenKm;
   // Cada muestra de la ruta toma la categoría del tramo en la misma fracción del recorrido.
   const counts = { asfalto: 0, parque: 0, tierra: 0 };
   let j = 0;
@@ -238,12 +253,36 @@ function landmarksAlong(samples) {
     .filter((h, k, arr) => !(k > 0 && h.name.startsWith('Puente') && arr[k - 1].name.startsWith('Puente')));
 }
 
+const joinNames = (names) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names.at(-1)}` : names[0]);
+const fmtKm = (km) => km.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+
+// Nombre de la ruta: en Madrid, los lugares conocidos por los que pasa; en cualquier sitio, los
+// paseos y calles en los que más kilómetros se corre, más el tramo de parque sin nombre.
 function routeName(c, A, B, loop) {
   const green = c.landmarks.filter((l) => l.green && !l.name.startsWith('Puente')).map((l) => l.name);
   if (c.landmarks.some((l) => l.name.startsWith('Puente'))) green.push('Madrid Río');
-  const pick = [...new Set(green)].slice(0, 3);
-  if (pick.length) return `Por ${pick.length > 1 ? `${pick.slice(0, -1).join(', ')} y ${pick.at(-1)}` : pick[0]}`;
+  const known = [...new Set(green)].slice(0, 3);
+  if (known.length) return `Por ${joinNames(known)}`;
+
+  const streets = [...(c.streets ?? [])]
+    .filter((s) => s.km >= 0.25)
+    .sort((x, y) => (y.greenKm * 2 + y.km) - (x.greenKm * 2 + x.km))   // los verdes pesan más
+    .slice(0, 2)
+    .map((s) => s.name);
+  if ((c.unnamedGreenKm ?? 0) >= 1) streets.push(`${fmtKm(c.unnamedGreenKm)} km de parque`);
+  if (streets.length) return `Por ${joinNames(streets)}`;
   return loop ? `Bucle desde ${A.name}` : `${A.name} → ${B.name}`;
+}
+
+// "Por dónde pasa": lugares conocidos y calles principales (más de 400 m), en orden de paso.
+function waypointList(c, A, B) {
+  const n = Math.max(1, c.samples.length - 1);
+  const items = [
+    ...c.landmarks.map((l) => ({ name: l.name, f: l.i / n })),
+    ...(c.streets ?? []).filter((s) => s.km >= 0.4).map((s) => ({ name: `${s.name} (${fmtKm(s.km)} km)`, f: s.f })),
+  ].sort((x, y) => x.f - y.f);
+  const middle = items.slice(0, 10).map((it) => it.name);
+  return [A.name, ...middle, B.name].filter((w, k, arr) => w !== arr[k - 1]);
 }
 
 function score(c, targetKm, it) {
@@ -351,7 +390,7 @@ export async function plan({ A, B, targetKm, intensity, seed = Date.now(), onPro
     c.name = routeName(c, A, end, loop);
     c.zoneName = loop ? `Bucle hacia el ${c.direction}` : `De A a B por el ${c.direction}`;
     c.anchorPoints = c.landmarks.map((l) => ({ name: l.name, at: l.at }));
-    c.waypoints = [A.name, ...c.landmarks.map((l) => l.name), end.name].filter((w, k, arr) => w !== arr[k - 1]);
+    c.waypoints = waypointList(c, A, end);
     c.minutes = [c.km * it.pace[0], c.km * it.pace[1]];
     c.workout = c.km >= LONG_RUN_KM ? it.longWorkout : it.workout;
     c.elevSource = 'Valhalla';

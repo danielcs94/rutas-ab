@@ -18,7 +18,9 @@ Esta versión funciona desde cualquier punto y para cualquier distancia razonabl
 
 ## Qué hace
 
-- Buscas la salida y la llegada por dirección, las marcas tocando el mapa o usas tu ubicación.
+- Funciona en cualquier ciudad del mundo. Buscas la salida y la llegada por dirección, las marcas
+  tocando el mapa o usas tu ubicación. La primera vez, el mapa se abre en tu ciudad (la saca de la
+  zona horaria y del idioma del navegador, sin pedir permisos).
 - Le pides una distancia. Antes de nada mide el camino más corto entre los dos puntos y, si pides menos
   que eso, te dice cuál es el mínimo.
 - Cada vez que le das al botón sale una ruta distinta. Calcula cuatro y te enseña la que mejor encaja
@@ -51,7 +53,10 @@ Todo sale en directo de servicios abiertos de OpenStreetMap. No hay backend ni A
   intensidad "Avanzado" además busca cuestas.
 - El desnivel, del endpoint `height` de Valhalla.
 - El tipo de cada tramo (calle, sendero, tierra) y los semáforos, de `trace_attributes`.
-- Las direcciones, de Nominatim.
+- Las direcciones, de Nominatim, en el idioma del navegador.
+- Los nombres de las rutas salen de las calles y paseos por los que pasa cada tramo, así que valen en
+  cualquier ciudad: "Por 9 de Julio, Misiones y 2 km de parque" en Córdoba (Argentina) o el paseo del
+  río Sumida en Tokio. En Madrid, además, se usan lugares conocidos como el Retiro o Madrid Río.
 - El mapa es vectorial, con MapLibre y teselas de OpenFreeMap, recoloreado para parecerse a Apple Maps.
 
 ## Problemas que me encontré
@@ -107,7 +112,9 @@ tools/
 - La distancia final queda entre un 90 % y un 100 % de la pedida.
 - El enlace de Google Maps lleva los mismos puntos de paso, pero Google recalcula el camino entre ellos.
   Para seguir la ruta exacta, mejor el GPX.
-- Fuera del centro de Madrid las rutas no se nombran por lugares conocidos, solo "salida → llegada".
+- Los caminos de los parques casi nunca tienen nombre en OpenStreetMap, así que fuera de Madrid el
+  nombre de la ruta dice "X km de parque" en vez del nombre del parque.
+- La interfaz está en español.
 
 ## Créditos
 

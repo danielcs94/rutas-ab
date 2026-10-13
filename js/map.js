@@ -178,6 +178,8 @@ export function createMap(container, theme = 'light') {
       }
     },
     onClick(cb) { clickHandler = cb; },
+    centerOn(lat, lon, zoom = 12) { map.jumpTo({ center: [lon, lat], zoom }); },
+    getCenter() { const c = map.getCenter(); return { lat: c.lat, lon: c.lng }; },
     setPicking(on) { map.getCanvas().style.cursor = on ? 'crosshair' : ''; },
     setTheme(theme) {
       if (theme === current) return;
