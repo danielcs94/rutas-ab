@@ -280,9 +280,11 @@ $('controls').addEventListener('submit', async (e) => {
 // ---------------------------------------------------------------------------
 // Resultado
 // ---------------------------------------------------------------------------
+// En rutas largas, formato de reloj como en las carreras ("1:29–1:44 h"); si no, minutos ("40–46′")
 const fmtMin = ([a, b]) => {
-  const f = (m) => (m >= 90 ? `${Math.floor(m / 60)} h ${String(Math.round(m % 60)).padStart(2, '0')}` : `${Math.round(m)}′`);
-  return `${f(a)} – ${f(b)}`;
+  if (b < 90) return `${Math.round(a)}–${Math.round(b)}′`;
+  const h = (m) => { const t = Math.round(m); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  return `${h(a)}–${h(b)} h`;
 };
 const fmtPace = (p) => `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, '0')}`;
 

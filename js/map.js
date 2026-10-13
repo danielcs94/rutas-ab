@@ -144,7 +144,11 @@ export function createMap(container, theme = 'light') {
     const perKm = Math.round(1000 / 20);
     for (let k = 1; k * perKm < c.samples.length - perKm / 3; k++) add(el('pin-km', k, `Km ${k}`), c.samples[k * perKm]);
     // Lugares por los que pasa
-    for (const a of c.anchorPoints ?? []) add(el('pin-place', '', a.name), a.at);
+    // Lugares por los que pasa (salvo los que coinciden con A o B, que taparían su marcador)
+    const near = (p, q) => q && Math.abs(p[0] - q.lat) < 0.0006 && Math.abs(p[1] - q.lon) < 0.0008;
+    for (const a of c.anchorPoints ?? []) {
+      if (!near(a.at, c.A) && !near(a.at, c.B)) add(el('pin-place', '', a.name), a.at);
+    }
     // Puntos de paso A, B, C (los mismos del enlace de Google Maps)
     (c.urlPoints ?? []).forEach((p, i) => add(el('pin-wp', i + 1, `Punto de paso ${i + 1}`), p));
   }
