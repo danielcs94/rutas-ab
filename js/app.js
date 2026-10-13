@@ -15,6 +15,12 @@ const SURFACES = [
   { key: 'asfalto', label: 'Asfalto / acera', color: '--series-2' },
   { key: 'tierra', label: 'Tierra', color: '--series-3' },
 ];
+// Estadísticas anónimas (GoatCounter). Los eventos llevan el prefijo "ab-" para distinguirlos
+// de los de Rutas Noviciado en el mismo panel.
+function track(path, title = path) {
+  try { window.goatcounter?.count?.({ path: `ab-${path}`, title, event: true }); } catch { /* sin estadísticas */ }
+}
+
 const QUICK_KM = [[5, '5'], [10, '10'], [15, '15'], [21.1, 'Media'], [30, '30'], [42, '42']];
 
 // ---------------------------------------------------------------------------
@@ -255,8 +261,13 @@ $('controls').addEventListener('submit', async (e) => {
     showCandidate(candidates[0]);
     saveHistory(candidates[0]);
     renderHistory();
+    const tramo = state.km <= 10 ? 'hasta-10km' : state.km <= 21.1 ? '10-a-21km' : 'mas-de-21km';
+    track('ruta-generada', `${state.km.toFixed(1)} km · ${INTENSITIES[state.intensity].label}`);
+    track(isLoop() ? 'tipo-bucle' : 'tipo-a-b');
+    track(`distancia-${tramo}`);
   } catch (err) {
     console.error(err);
+    track('error-al-generar', String(err.message).slice(0, 80));
     showError(err.message || 'No se pudo calcular la ruta. Inténtalo de nuevo en unos segundos.');
     if (err.minKm) setKm(Math.min(MAX_KM, Math.ceil(err.minKm * 1.15)));
   } finally {
@@ -330,9 +341,12 @@ function showCandidate(c, { fit = true } = {}) {
   renderHistory();
 }
 
+$('r-gmaps').addEventListener('click', () => track('abrir-google-maps'));
+
 $('r-gpx').addEventListener('click', () => {
   const c = state.current;
   if (!c) return;
+  track('descargar-gpx');
   const blob = new Blob([toGpx(c)], { type: 'application/gpx+xml' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -345,6 +359,7 @@ $('r-copy').addEventListener('click', async (e) => {
   try {
     await navigator.clipboard.writeText($('r-gmaps').href);
     e.target.textContent = '¡Copiado!';
+    track('copiar-enlace');
   } catch {
     e.target.textContent = 'No se pudo copiar';
   }
