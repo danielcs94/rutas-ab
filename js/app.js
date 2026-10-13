@@ -97,6 +97,13 @@ async function setPoints({ fit = true } = {}) {
     $('points-hint').textContent = 'Sin punto B: la ruta sale de A y vuelve a A.';
     return;
   }
+  // Demasiado lejos incluso en línea recta: se avisa sin consultar al servidor
+  const straightKm = haversine([state.A.lat, state.A.lon], [state.B.lat, state.B.lon]) / 1000;
+  if (straightKm > MAX_KM) {
+    directToken++;
+    $('points-hint').textContent = `A y B están a ${Math.round(straightKm).toLocaleString('es-ES')} km en línea recta, más del máximo de ${MAX_KM} km. Revisa el punto A: ahora es «${state.A.name}».`;
+    return;
+  }
   // Camino más corto de A a B: marca el mínimo de distancia posible
   const token = ++directToken;
   $('points-hint').textContent = 'Midiendo el camino más corto de A a B…';
@@ -127,7 +134,8 @@ function setupSearch(which) {
     list.hidden = false;
     list.innerHTML = '<li class="muted">Buscando…</li>';
     try {
-      const results = await searchPlaces(q);
+      const other = which === 'A' ? state.B : state.A;
+      const results = await searchPlaces(q, other ?? state[which]);
       if (my !== token) return;
       list.innerHTML = results.length
         ? results.map((r, i) => `<li><button type="button" data-i="${i}"><b>${r.name}</b><span>${r.detail}</span></button></li>`).join('')

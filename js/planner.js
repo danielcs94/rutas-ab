@@ -286,6 +286,10 @@ export async function plan({ A, B, targetKm, intensity, seed = Date.now(), onPro
     const base = rand() * 2 * Math.PI;
     shapes = Array.from({ length: CANDIDATES }, (_, i) => loopShape(pA, rand, base + (i * Math.PI * 2) / CANDIDATES));
   } else {
+    const straightKm = haversine(pA, pB) / 1000;
+    if (straightKm > MAX_KM) {
+      throw new Error(`A y B están a ${Math.round(straightKm).toLocaleString('es-ES')} km en línea recta, más del máximo de ${MAX_KM} km. Revisa el punto A: ahora es «${A.name}».`);
+    }
     onProgress('Calculando el camino más corto de A a B…', 0.03);
     direct = await routeFoot([pA, pB], prefs);
     const directKm = direct.distance / 1000;

@@ -169,11 +169,15 @@ export async function edgesAlong(coords) {
 // ---------------------------------------------------------------------------
 const nominatimOpts = { gap: 1100, retries: 2, timeout: 12000 };
 
-export async function searchPlaces(query) {
-  const params = new URLSearchParams({
-    q: query, format: 'jsonv2', limit: '6', countrycodes: 'es', 'accept-language': 'es',
-    viewbox: '-4.10,40.75,-3.30,40.15', // Comunidad de Madrid primero, sin excluir el resto
-  });
+// Busca en todo el mundo. Si se pasa `near` ({lat, lon}), da prioridad a los resultados de
+// alrededor (unos 70 km), sin excluir el resto: "Plaza Mayor" encuentra la de tu ciudad, y
+// "Córdoba, Argentina" sigue funcionando aunque el otro punto esté en Madrid.
+export async function searchPlaces(query, near = null) {
+  const params = new URLSearchParams({ q: query, format: 'jsonv2', limit: '6', 'accept-language': 'es' });
+  if (near) {
+    const d = 0.6;
+    params.set('viewbox', `${near.lon - d},${near.lat + d},${near.lon + d},${near.lat - d}`);
+  }
   const results = await fetchJSON(`${NOMINATIM}/search?${params}`, {}, nominatimOpts);
   return results.map((r) => ({
     name: r.name || r.display_name.split(',')[0],
