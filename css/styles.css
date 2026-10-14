@@ -412,3 +412,91 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 @media (max-width: 420px) {
   .stat:not(.hero) .v { font-size: 17px; }
 }
+
+.brand-actions { display: flex; gap: 6px; flex: none; }
+#style-toggle[aria-pressed="true"] { background: var(--accent, var(--ink)); color: var(--on-accent, var(--surface)); border-color: transparent; }
+
+/* ---------------------------------------------------------------------------
+   Estilo deportivo (data-style="sport"), combinable con claro y oscuro.
+   Inspirado en la estética de las marcas deportivas: titulares condensados en
+   mayúscula y cursiva, blanco y negro de alto contraste, acento neón y botones
+   en píldora. Sin logotipos ni tipografías de ninguna marca.
+--------------------------------------------------------------------------- */
+:root[data-style="sport"] {
+  --font: 'Barlow', 'Inter', system-ui, sans-serif;
+  --display: 'Barlow Condensed', 'Arial Narrow', 'Inter', system-ui, sans-serif;
+  --radius: 4px;
+  --bg: #f2f2f2;
+  --surface: #ffffff;
+  --surface-2: #ececec;
+  --line: #d9d9d9;
+  --ink: #111111;
+  --ink-2: #3b3b3b;
+  --ink-3: #707070;
+  --accent: #dfff00;        /* amarillo neón: solo como fondo, con texto negro encima */
+  --on-accent: #111111;
+  --map-casing: #ffffff;
+  --shadow: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-style="sport"]:not([data-theme="light"]) {
+    --bg: #000000; --surface: #0f0f0f; --surface-2: #1c1c1c; --line: #2a2a2a;
+    --ink: #ffffff; --ink-2: #c8c8c8; --ink-3: #8a8a8a;
+    --accent: #dfff00; --on-accent: #000000; --map-casing: #000000;
+  }
+}
+:root[data-style="sport"][data-theme="dark"] {
+  --bg: #000000; --surface: #0f0f0f; --surface-2: #1c1c1c; --line: #2a2a2a;
+  --ink: #ffffff; --ink-2: #c8c8c8; --ink-3: #8a8a8a;
+  --accent: #dfff00; --on-accent: #000000; --map-casing: #000000;
+}
+
+/* Titulares y cifras: condensados, en mayúscula y cursiva */
+[data-style="sport"] h1, [data-style="sport"] h2, [data-style="sport"] h3,
+[data-style="sport"] .stat .v, [data-style="sport"] #km-out b, [data-style="sport"] .card .k {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+[data-style="sport"] .brand h1 { font-size: 46px; line-height: .92; margin: 6px 0 8px; }
+[data-style="sport"] .result-head h2 { font-size: 26px; line-height: 1; }
+[data-style="sport"] .block h3, [data-style="sport"] .list-section h3 { font-size: 18px; }
+[data-style="sport"] .stat.hero .v { font-size: 64px; line-height: .9; }
+[data-style="sport"] .stat .v { font-size: 26px; }
+[data-style="sport"] #km-out b { font-size: 38px; }
+[data-style="sport"] .eyebrow,
+[data-style="sport"] .field legend, [data-style="sport"] .field label,
+[data-style="sport"] .stat .l {
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Botones: píldoras; el principal en neón con texto negro */
+[data-style="sport"] .primary, [data-style="sport"] .secondary {
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+}
+[data-style="sport"] .primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+[data-style="sport"] .secondary { border-color: var(--ink); }
+[data-style="sport"] .segmented { border-radius: 999px; background: var(--surface-2); border-color: transparent; }
+[data-style="sport"] .segmented button { border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; font-size: 13px; }
+[data-style="sport"] .segmented button[aria-pressed="true"] { background: var(--ink); color: var(--surface); box-shadow: none; }
+[data-style="sport"] .chips button { text-transform: uppercase; font-weight: 700; letter-spacing: .04em; }
+[data-style="sport"] .chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+/* Tarjetas planas, sin sombra */
+[data-style="sport"] .stat { border-radius: var(--radius); }
+[data-style="sport"] .card { border-radius: var(--radius); border-width: 2px; }
+[data-style="sport"] .card[aria-current="true"] { border-color: var(--ink); box-shadow: none; }
+[data-style="sport"] .point-main input { border-radius: var(--radius); }
+[data-style="sport"] .icon-btn { border-radius: 999px; }
+@media (max-width: 420px) {
+  [data-style="sport"] .eyebrow { letter-spacing: .05em; font-size: 10px; }
+  [data-style="sport"] .brand h1 { font-size: 40px; }
+}

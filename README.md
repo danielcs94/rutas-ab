@@ -29,7 +29,8 @@ Esta versión funciona desde cualquier punto y para cualquier distancia razonabl
   o tierra, los semáforos, el tiempo estimado y una sesión de entrenamiento que cambia si es una tirada
   larga.
 - La puedes abrir en Google Maps o descargar en GPX para Strava, Garmin o Komoot.
-- Se instala en el móvil como una app y tiene modo oscuro.
+- Se instala en el móvil como una app. Tiene modo claro y oscuro, y dos estilos: el clásico y uno deportivo
+  (titulares condensados en cursiva, blanco y negro y acento neón), que se cambian con el botón ⚡.
 
 ## Cómo se inventa la ruta
 
