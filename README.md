@@ -2,13 +2,17 @@
 
 Generador de rutas para salir a correr. Eliges desde dónde sales, a dónde quieres llegar y cuántos
 kilómetros te apetecen (hasta 42), y la app se inventa una ruta real entre los dos puntos,
-intentando meterte por parques y paseos peatonales. Si no pones llegada, te hace un bucle.
+intentando meterte por parques y paseos peatonales. Si no pones llegada, te hace un bucle. Luego
+puedes correrla con la propia app: te sigue con el GPS, te dice el ritmo y te avisa de los giros.
 
 **Pruébala aquí: https://danielcs94.github.io/rutas-ab/**
 
 <p>
   <img src="docs/captura-escritorio.webp" alt="Ruta de 20,85 km de Noviciado a la Puerta de Alcalá por Sabatini, Madrid Río y el Retiro" width="72%">
   <img src="docs/captura-movil.webp" alt="La app en el móvil, en modo oscuro" width="24%">
+</p>
+<p>
+  <img src="docs/captura-carrera.webp" alt="Modo carrera en el móvil: 4,33 km, ritmo actual 5:02 y aviso de giro a la derecha en 370 m" width="24%">
 </p>
 
 Empezó como [Rutas Noviciado](https://github.com/danielcs94/rutas-noviciado), que solo hacía bucles
@@ -29,6 +33,7 @@ Esta versión funciona desde cualquier punto y para cualquier distancia razonabl
   o tierra, los semáforos, el tiempo estimado y una sesión de entrenamiento que cambia si es una tirada
   larga.
 - La puedes abrir en Google Maps o descargar en GPX para Strava, Garmin o Komoot.
+- O correrla desde la app con el modo carrera (más abajo), que guarda cada carrera en "Mis carreras".
 - Se instala en el móvil como una app, con un estilo deportivo (titulares condensados en cursiva, blanco
   y negro y acento neón) en modo claro y oscuro.
 
@@ -53,6 +58,30 @@ Castilla a Príncipe de Vergara, por ejemplo, las rutas en zigzag no se alejan m
 camino directo, mientras que las elipses daban rodeos de hasta dos kilómetros y medio.
 
 Si A y B son el mismo punto, la elipse se convierte en un círculo que pasa por A y la ruta es un bucle.
+
+## Modo carrera
+
+Con el botón "Empezar carrera" la app pasa a pantalla completa y usa el GPS del móvil:
+
+- Distancia, tiempo, ritmo actual (de los últimos 20 segundos), ritmo medio y kilómetros que faltan.
+- El mapa te sigue y pinta lo que llevas recorrido encima de la ruta.
+- Te avisa por voz de los giros ("en 60 metros, gira a la derecha"), de cada kilómetro con su ritmo
+  y de si te sales de la ruta, diciéndote hacia dónde queda.
+- Se pausa sola cuando te paras en un semáforo y sigue cuando vuelves a correr.
+- Para terminar hay que mantener el botón pulsado un segundo, para no cortarla sin querer.
+- Al acabar te enseña el resumen con los parciales por kilómetro y puedes compartir o descargar el GPX
+  de lo que has corrido de verdad, con la hora de cada punto, para subirlo a Strava.
+- Si se recarga la página a mitad de carrera, la recupera en pausa.
+
+Lo difícil fue que la distancia saliera bien. El GPS del móvil baila unos metros en cada lectura, y si
+sumas la distancia entre lecturas sale bastante más de lo que has corrido. Probé primero con un filtro
+de Kalman sencillo, que mezcla cada posición con la anterior según su precisión. Con buena señal
+funcionaba, pero con mala señal recortaba las esquinas y se perdía hasta un 30 % en rutas con muchos
+giros. La solución fue aprovechar que ya tenemos la ruta: mientras vas por ella, la distancia es lo que
+avanzas sobre la ruta, y el GPS solo cuenta cuando te sales. Lo probé con carreras simuladas con ruido
+y queda por debajo del 1 % de error con buena señal y alrededor del 3 % con muy mala.
+
+La lógica está separada de la pantalla (`tracker.js`) para poder probarla así, sin salir a correr.
 
 ## De dónde salen los datos
 
@@ -82,6 +111,10 @@ otras tres.
 El servidor público de Valhalla solo acepta 10 puntos por petición. Las listas largas se parten en
 trozos que comparten el punto de unión y luego se pegan.
 
+Una web no puede seguir usando el GPS con la pantalla bloqueada. Durante la carrera la app pide al
+navegador que no apague la pantalla y, si aun así se bloquea, al volver une el tramo perdido siguiendo
+la ruta en vez de con una línea recta.
+
 Y uno que ya me pasó con la primera versión: en el móvil, la caché del navegador mezclaba archivos
 viejos y nuevos y la app se rompía. `tools/release.py` pone un número de versión a todos los módulos
 antes de cada publicación.
@@ -105,6 +138,8 @@ js/
   planner.js     la elipse, la calibración de la distancia y la puntuación de cada ruta
   api.js         Valhalla (rutas, altitud y atributos), OSRM de reserva y Nominatim
   app.js         la interfaz: puntos A y B, controles, resultado e historial
+  run.js         el modo carrera: pantalla, GPS, voz y mis carreras
+  tracker.js     las cuentas de la carrera: distancia, ritmos, parciales, giros y desvíos
   map.js         el mapa y lo que se dibuja encima
   mapstyle.js    la paleta tipo Apple Maps
   profile.js     el perfil de elevación
@@ -124,6 +159,9 @@ tools/
   está siempre en el GPX.
 - Los caminos de los parques casi nunca tienen nombre en OpenStreetMap, así que fuera de Madrid el
   nombre de la ruta dice "X km de parque" en vez del nombre del parque.
+- El modo carrera necesita la pantalla encendida: si se bloquea, el GPS se para hasta que vuelves.
+- Una web no tiene acceso a Salud de Apple ni a Health Connect de Android. Para guardar ahí una carrera
+  hay que pasar el GPX por una app que sí lo tenga, como Strava.
 - La interfaz está en español.
 
 ## Créditos
