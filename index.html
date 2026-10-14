@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
-  <link rel="stylesheet" href="css/styles.css?v=202610140154">
+  <link rel="stylesheet" href="css/styles.css?v=202610140230">
 </head>
 <body>
   <div class="app">
@@ -71,6 +71,12 @@
           <div class="range-scale"><span>1 km</span><span>42 km · maratón</span></div>
           <div class="chips km-quick" id="km-quick" aria-label="Distancias habituales"></div>
         </div>
+
+        <fieldset class="field" id="prefer-field">
+          <legend>Por dónde</legend>
+          <div class="segmented" id="prefer"></div>
+          <p class="hint" id="prefer-hint"></p>
+        </fieldset>
 
         <fieldset class="field">
           <legend>Intensidad</legend>
@@ -161,17 +167,17 @@
   <script type="importmap">
 {
   "imports": {
-    "./js/api.js": "./js/api.js?v=202610140154",
-    "./js/app.js": "./js/app.js?v=202610140154",
-    "./js/config.js": "./js/config.js?v=202610140154",
-    "./js/geo.js": "./js/geo.js?v=202610140154",
-    "./js/map.js": "./js/map.js?v=202610140154",
-    "./js/mapstyle.js": "./js/mapstyle.js?v=202610140154",
-    "./js/planner.js": "./js/planner.js?v=202610140154",
-    "./js/profile.js": "./js/profile.js?v=202610140154"
+    "./js/api.js": "./js/api.js?v=202610140230",
+    "./js/app.js": "./js/app.js?v=202610140230",
+    "./js/config.js": "./js/config.js?v=202610140230",
+    "./js/geo.js": "./js/geo.js?v=202610140230",
+    "./js/map.js": "./js/map.js?v=202610140230",
+    "./js/mapstyle.js": "./js/mapstyle.js?v=202610140230",
+    "./js/planner.js": "./js/planner.js?v=202610140230",
+    "./js/profile.js": "./js/profile.js?v=202610140230"
   }
 }
   </script>
-  <script type="module" src="js/app.js?v=202610140154"></script>
+  <script type="module" src="js/app.js?v=202610140230"></script>
 </body>
 </html>

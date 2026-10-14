@@ -58,6 +58,23 @@ function ellipseShape(A, B, rand, side) {
   };
 }
 
+// Zigzag: los puntos de paso van a lo largo del camino directo, alternando a un lado y a otro.
+// La ruta va por en medio, serpenteando, en vez de rodear por fuera como la elipse. El tamaño
+// `a` es aquí la amplitud lateral del zigzag (km).
+function zigzagShape(A, B, rand) {
+  const [e, n] = vec(A, B);
+  const len = Math.hypot(e, n);
+  const k = rand() < 0.5 ? 3 : 4;
+  const first = rand() < 0.5 ? 1 : -1;
+  return {
+    kind: 'zigzag', A, B, c: len / 2,
+    u: [e / len, n / len],
+    v: [-n / len, e / len],
+    ts: Array.from({ length: k }, (_, j) => (j + 1) / (k + 1) + (rand() - 0.5) * 0.08),
+    sides: Array.from({ length: k }, (_, j) => (j % 2 ? -first : first) * (0.7 + rand() * 0.3)),
+  };
+}
+
 function loopShape(A, rand, bearing) {
   return {
     kind: 'loop', A, B: A, bearing,
@@ -68,6 +85,13 @@ function loopShape(A, rand, bearing) {
 
 // Puntos de paso de la forma para el tamaño `a` (semieje mayor, o radio en un bucle), en km.
 function waypoints(s, a) {
+  if (s.kind === 'zigzag') {
+    return s.ts.map((t, i) => {
+      const x = t * 2 * s.c;                 // distancia a lo largo de A→B
+      const y = s.sides[i] * a;              // desvío lateral, alternando lados
+      return offset(s.A, x * s.u[0] + y * s.v[0], x * s.u[1] + y * s.v[1]);
+    });
+  }
   if (s.kind === 'loop') {
     const center = offset(s.A, a * Math.sin(s.bearing), a * Math.cos(s.bearing));
     const back = s.bearing + Math.PI;
@@ -84,7 +108,7 @@ function waypoints(s, a) {
   });
 }
 
-const minSize = (s) => (s.kind === 'loop' ? 0.05 : s.c * 1.0005);
+const minSize = (s) => (s.kind === 'loop' ? 0.05 : s.kind === 'zigzag' ? 0.01 : s.c * 1.0005);
 
 // Tamaño inicial: el que da una línea recta A → puntos → B de `km / DETOUR` (búsqueda binaria local).
 function initialSize(s, km) {
@@ -285,14 +309,22 @@ function waypointList(c, A, B) {
   return [A.name, ...middle, B.name].filter((w, k, arr) => w !== arr[k - 1]);
 }
 
-function score(c, targetKm, it) {
+// "Por dónde": cuánto pesan el asfalto y los semáforos al elegir la mejor ruta.
+// En "Ciudad" no penalizan: ir por el centro es justo lo que se pide.
+export const PREFERENCES = {
+  parques: { label: 'Parques', hint: 'Rodeos buscando zonas verdes y pocos semáforos.', ellipses: 4, urban: 1 },
+  mezcla: { label: 'Mezcla', hint: 'Rutas que rodean y rutas que cruzan la ciudad.', ellipses: 2, urban: 0.5 },
+  ciudad: { label: 'Ciudad', hint: 'Por en medio, serpenteando cerca del camino directo.', ellipses: 0, urban: 0 },
+};
+
+function score(c, targetKm, it, pref = PREFERENCES.mezcla) {
   const gpk = c.gain == null ? (it.gainPerKm[0] + it.gainPerKm[1]) / 2 : c.gain / c.km;
   const [lo, hi] = it.gainPerKm;
   const gainDev = Math.max(0, lo - gpk) + Math.max(0, gpk - hi);
   const signalsPer10 = c.signals == null ? 10 : (10 * c.signals) / c.km;
   const asphalt = c.surface ? c.surface.asfalto : 45;
-  return (Math.abs(targetKm - c.km) / targetKm) * 100 + gainDev * it.wGain + signalsPer10 * it.wSignals
-    + asphalt * it.wAsphalt + c.overlap * 0.5;
+  return (Math.abs(targetKm - c.km) / targetKm) * 100 + gainDev * it.wGain
+    + (signalsPer10 * it.wSignals + asphalt * it.wAsphalt) * pref.urban + c.overlap * 0.5;
 }
 
 async function pool(items, limit, fn) {
@@ -309,7 +341,8 @@ async function pool(items, limit, fn) {
 // API pública
 // ---------------------------------------------------------------------------
 // A y B: { name, lat, lon }. Si B falta o está a menos de LOOP_RADIUS_KM de A, sale un bucle.
-export async function plan({ A, B, targetKm, intensity, seed = Date.now(), onProgress = () => {} }) {
+export async function plan({ A, B, targetKm, intensity, prefer = 'mezcla', seed = Date.now(), onProgress = () => {} }) {
+  const pref = PREFERENCES[prefer] ?? PREFERENCES.mezcla;
   if (!(targetKm > 0 && targetKm <= MAX_KM)) throw new Error(`La distancia debe estar entre 1 y ${MAX_KM} km`);
   const it = INTENSITIES[intensity];
   const prefs = { use_hills: it.useHills };
@@ -338,7 +371,10 @@ export async function plan({ A, B, targetKm, intensity, seed = Date.now(), onPro
       err.minKm = directKm;
       throw err;
     }
-    shapes = Array.from({ length: CANDIDATES }, (_, i) => ellipseShape(pA, pB, rand, i % 2 ? -1 : 1));
+    // Elipses (rodean) y zigzags (cruzan por en medio) según la preferencia
+    shapes = Array.from({ length: CANDIDATES }, (_, i) => (i < pref.ellipses
+      ? ellipseShape(pA, pB, rand, i % 2 ? -1 : 1)
+      : zigzagShape(pA, pB, rand)));
   }
 
   let done = 0;
@@ -381,6 +417,7 @@ export async function plan({ A, B, targetKm, intensity, seed = Date.now(), onPro
       direction: COMPASS[Math.round(deg / 45) % 8],
       intensity,
       engine: 'Valhalla (OpenStreetMap)',
+      shapeKind: shape.kind,
     };
     c.samples = resample(c.coords, SAMPLE_M);
     try { await addElevation(c); } catch (err) { console.warn(err); c.gain = null; c.profile = []; }
@@ -388,13 +425,14 @@ export async function plan({ A, B, targetKm, intensity, seed = Date.now(), onPro
     c.overlap = overlapPct(c.samples);
     c.landmarks = landmarksAlong(c.samples);
     c.name = routeName(c, A, end, loop);
-    c.zoneName = loop ? `Bucle hacia el ${c.direction}` : `De A a B por el ${c.direction}`;
+    c.zoneName = loop ? `Bucle hacia el ${c.direction}`
+      : shape.kind === 'zigzag' ? 'De A a B cruzando por en medio' : `De A a B rodeando por el ${c.direction}`;
     c.anchorPoints = c.landmarks.map((l) => ({ name: l.name, at: l.at }));
     c.waypoints = waypointList(c, A, end);
     c.minutes = [c.km * it.pace[0], c.km * it.pace[1]];
     c.workout = c.km >= LONG_RUN_KM ? it.longWorkout : it.workout;
     c.elevSource = 'Valhalla';
-    c.score = score(c, targetKm, it);
+    c.score = score(c, targetKm, it, pref);
     if (c.km > MAX_KM) throw new Error(`Límite de ${MAX_KM} km violado`); // garantía final
     fits.push(c);
   }

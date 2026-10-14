@@ -1,6 +1,6 @@
 // Interfaz: puntos A y B, controles, generación, resultado, alternativas e historial.
 import { MAX_KM, MIN_KM, DEFAULT_A, LOOP_RADIUS_KM, INTENSITIES } from './config.js';
-import { plan, googleMapsUrl, toGpx } from './planner.js';
+import { plan, googleMapsUrl, toGpx, PREFERENCES } from './planner.js';
 import { routeFoot, searchPlaces, placeName, locateCity } from './api.js';
 import { haversine } from './geo.js';
 import { createMap } from './map.js';
@@ -43,6 +43,7 @@ const saved = store.get(POINTS_KEY, null);
 const state = {
   km: 10,
   intensity: 'medio',
+  prefer: store.get('rutas-ab:prefer', 'mezcla'),
   A: saved ? saved.A ?? null : IN_SPAIN ? { ...DEFAULT_A } : null,
   B: saved?.B ?? null,
   pick: null,            // 'A' | 'B' mientras se elige un punto tocando el mapa
@@ -91,6 +92,7 @@ const isLoop = () => !state.A || !state.B || haversine([state.A.lat, state.A.lon
 let directToken = 0;
 async function setPoints({ fit = true } = {}) {
   store.set(POINTS_KEY, { A: state.A, B: state.B });
+  renderControls();
   $('a-input').value = state.A?.name ?? '';
   $('b-input').value = state.B?.name ?? '';
   $('b-clear').hidden = !state.B;
@@ -233,6 +235,12 @@ function renderControls() {
   $('km-out').innerHTML = `<b>${state.km.toFixed(1)}</b> km`;
   $('km-quick').innerHTML = QUICK_KM.map(([k, label]) =>
     `<button type="button" data-km="${k}" aria-pressed="${Math.abs(state.km - k) < 0.05}">${label}</button>`).join('');
+  $('prefer').innerHTML = Object.entries(PREFERENCES).map(([k, p]) =>
+    `<button type="button" data-p="${k}" aria-pressed="${k === state.prefer}">${p.label}</button>`).join('');
+  // En un bucle no hay camino directo que cruzar: solo cambia cómo se elige la mejor ruta
+  $('prefer-hint').textContent = isLoop() && state.A
+    ? `${PREFERENCES[state.prefer].hint} En bucle solo cambia qué ruta se elige.`
+    : PREFERENCES[state.prefer].hint;
   $('intensity').innerHTML = Object.entries(INTENSITIES).map(([k, it]) =>
     `<button type="button" data-k="${k}" aria-pressed="${k === state.intensity}">${it.label}</button>`).join('');
   $('intensity-hint').textContent = INTENSITIES[state.intensity].hint;
@@ -242,6 +250,10 @@ $('km').addEventListener('input', (e) => setKm(Number(e.target.value)));
 $('km-quick').addEventListener('click', (e) => {
   const km = e.target.closest('button')?.dataset.km;
   if (km) setKm(Number(km));
+});
+$('prefer').addEventListener('click', (e) => {
+  const k = e.target.closest('button')?.dataset.p;
+  if (k) { state.prefer = k; store.set('rutas-ab:prefer', k); renderControls(); }
 });
 $('intensity').addEventListener('click', (e) => {
   const k = e.target.closest('button')?.dataset.k;
@@ -270,6 +282,7 @@ $('controls').addEventListener('submit', async (e) => {
       B: isLoop() ? null : state.B,
       targetKm: state.km,
       intensity: state.intensity,
+      prefer: state.prefer,
       onProgress: (msg, frac) => {
         $('progress-text').textContent = msg;
         $('progress-bar').style.width = `${Math.round(frac * 100)}%`;
@@ -282,6 +295,7 @@ $('controls').addEventListener('submit', async (e) => {
     const tramo = state.km <= 10 ? 'hasta-10km' : state.km <= 21.1 ? '10-a-21km' : 'mas-de-21km';
     track('ruta-generada', `${state.km.toFixed(1)} km · ${INTENSITIES[state.intensity].label}`);
     track(isLoop() ? 'tipo-bucle' : 'tipo-a-b');
+    track(`preferencia-${state.prefer}`);
     track(`distancia-${tramo}`);
   } catch (err) {
     console.error(err);

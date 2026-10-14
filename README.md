@@ -43,6 +43,14 @@ a [Valhalla](https://github.com/valhalla/valhalla) la ruta a pie que pasa por el
 sale nunca es la pedida a la primera, así que el tamaño de la elipse se corrige con el método de la
 secante. Con tres o cuatro intentos queda justo por debajo de los kilómetros que querías.
 
+La elipse tiene un problema: sus puntos siempre quedan lejos del camino directo, así que las rutas
+rodean la ciudad por fuera. Para ir por en medio hay una segunda forma, en zigzag: los puntos de paso
+van a lo largo de la línea entre A y B, alternando a un lado y a otro, y lo que se ajusta es cuánto se
+separan. Con el control "Por dónde" eliges: **Parques** (solo elipses, que buscan zonas verdes),
+**Ciudad** (solo zigzag, sin penalizar asfalto ni semáforos) o **Mezcla** (de las dos). De Plaza de
+Castilla a Príncipe de Vergara, por ejemplo, las rutas en zigzag no se alejan más de un kilómetro del
+camino directo, mientras que las elipses daban rodeos de hasta dos kilómetros y medio.
+
 Si A y B son el mismo punto, la elipse se convierte en un círculo que pasa por A y la ruta es un bucle.
 
 ## De dónde salen los datos
