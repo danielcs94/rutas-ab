@@ -72,6 +72,9 @@ Con el botón "Empezar carrera" la app pasa a pantalla completa y usa el GPS del
 - Al acabar te enseña el resumen con los parciales por kilómetro y puedes compartir o descargar el GPX
   de lo que has corrido de verdad, con la hora de cada punto, para subirlo a Strava.
 - Si se recarga la página a mitad de carrera, la recupera en pausa.
+- Al empezar en el móvil, una ventana explica cómo bloquear los toques para llevarlo en el bolsillo o
+  el brazalete: en iPhone con el Acceso guiado y en Android con "Fijar aplicación" o la protección
+  contra toques accidentales que traen muchos móviles. Se puede marcar para que no salga más.
 
 Lo difícil fue que la distancia saliera bien. El GPS del móvil baila unos metros en cada lectura, y si
 sumas la distancia entre lecturas sale bastante más de lo que has corrido. Probé primero con un filtro
@@ -113,7 +116,9 @@ trozos que comparten el punto de unión y luego se pegan.
 
 Una web no puede seguir usando el GPS con la pantalla bloqueada. Durante la carrera la app pide al
 navegador que no apague la pantalla y, si aun así se bloquea, al volver une el tramo perdido siguiendo
-la ruta en vez de con una línea recta.
+la ruta en vez de con una línea recta. Quedaba el problema de llevar el móvil encendido en el bolsillo
+sin pulsar nada. Eso no se puede resolver desde una web, pero el iPhone tiene el Acceso guiado, que
+desactiva los toques en toda la pantalla, así que la app te enseña a usarlo justo antes de empezar.
 
 Y uno que ya me pasó con la primera versión: en el móvil, la caché del navegador mezclaba archivos
 viejos y nuevos y la app se rompía. `tools/release.py` pone un número de versión a todos los módulos
@@ -159,7 +164,8 @@ tools/
   está siempre en el GPX.
 - Los caminos de los parques casi nunca tienen nombre en OpenStreetMap, así que fuera de Madrid el
   nombre de la ruta dice "X km de parque" en vez del nombre del parque.
-- El modo carrera necesita la pantalla encendida: si se bloquea, el GPS se para hasta que vuelves.
+- El modo carrera necesita la pantalla encendida: si se bloquea, el GPS se para hasta que vuelves. Con
+  el Acceso guiado del iPhone se puede llevar encendida sin que se pulse nada.
 - Una web no tiene acceso a Salud de Apple ni a Health Connect de Android. Para guardar ahí una carrera
   hay que pasar el GPX por una app que sí lo tenga, como Strava.
 - La interfaz está en español.
