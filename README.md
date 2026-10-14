@@ -7,7 +7,7 @@ intentando meterte por parques y paseos peatonales. Si no pones llegada, te hace
 **Pruébala aquí: https://danielcs94.github.io/rutas-ab/**
 
 <p>
-  <img src="docs/captura-escritorio.webp" alt="Media maratón de Noviciado a la Puerta de Alcalá pasando por Madrid Río y el Retiro" width="72%">
+  <img src="docs/captura-escritorio.webp" alt="Ruta de 20,85 km de Noviciado a la Puerta de Alcalá por Sabatini, Madrid Río y el Retiro" width="72%">
   <img src="docs/captura-movil.webp" alt="La app en el móvil, en modo oscuro" width="24%">
 </p>
 

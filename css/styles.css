@@ -463,7 +463,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 [data-style="sport"] .result-head h2 { font-size: 26px; line-height: 1; }
 [data-style="sport"] .block h3, [data-style="sport"] .list-section h3 { font-size: 18px; }
 [data-style="sport"] .stat.hero .v { font-size: 64px; line-height: .9; }
-[data-style="sport"] .stat .v { font-size: 26px; }
+[data-style="sport"] .stat .v { font-size: 19px; }
+[data-style="sport"] .stat:not(.hero) { padding-inline: 10px; }
 [data-style="sport"] #km-out b { font-size: 38px; }
 [data-style="sport"] .eyebrow,
 [data-style="sport"] .field legend, [data-style="sport"] .field label,
@@ -496,6 +497,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 [data-style="sport"] .point-main input { border-radius: var(--radius); }
 [data-style="sport"] .icon-btn { border-radius: 999px; }
 @media (max-width: 420px) {
+  [data-style="sport"] .stat:not(.hero) .v { font-size: 19px; }
   [data-style="sport"] .eyebrow { letter-spacing: .05em; font-size: 10px; }
   [data-style="sport"] .brand h1 { font-size: 40px; }
 }
