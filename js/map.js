@@ -155,16 +155,90 @@ export function createMap(container, theme = 'light') {
 
   map.on('error', (e) => console.warn('Mapa:', e.error?.message ?? e));
 
+  // Modo carrera: lo que llevas recorrido (línea) y dónde estás (punto con su margen de error)
+  let run = { track: null, pos: null };
+  const runner = new maplibregl.Marker({ element: el('pin-runner', '') });
+  let runnerShown = false;
+  function addRunLayers() {
+    map.addSource('run-track', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addSource('run-acc', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'run-track-casing', type: 'line', source: 'run-track',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': cssVar('--map-casing'), 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 7, 17, 14] },
+    });
+    map.addLayer({
+      id: 'run-track', type: 'line', source: 'run-track',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': cssVar('--ink'), 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 17, 7] },
+    });
+    // Radio en metros convertido a píxeles: a zoom 22, r22 píxeles; se escala ×2 por nivel
+    map.addLayer({
+      id: 'run-acc', type: 'circle', source: 'run-acc',
+      paint: {
+        'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 0, 0, 22, ['get', 'r22']],
+        'circle-color': cssVar('--series-1'), 'circle-opacity': 0.14,
+        'circle-stroke-color': cssVar('--series-1'), 'circle-stroke-opacity': 0.35, 'circle-stroke-width': 1,
+      },
+    });
+  }
+  function renderRun() {
+    if (!map.getSource('run-track')) return;
+    const segs = [];
+    for (const p of run.track ?? []) {
+      if (p.seg || !segs.length) segs.push([]);
+      segs.at(-1).push([p.lon, p.lat]);
+    }
+    map.getSource('run-track').setData({
+      type: 'FeatureCollection',
+      features: segs.filter((s) => s.length > 1).map((coordinates) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } })),
+    });
+    const pos = run.pos;
+    map.getSource('run-acc').setData({
+      type: 'FeatureCollection',
+      features: pos ? [{
+        type: 'Feature',
+        properties: { r22: pos.acc / ((156543.03 * Math.cos((pos.lat * Math.PI) / 180)) / 4194304) },
+        geometry: { type: 'Point', coordinates: [pos.lon, pos.lat] },
+      }] : [],
+    });
+    if (pos) {
+      runner.setLngLat([pos.lon, pos.lat]);
+      if (!runnerShown) { runner.addTo(map); runnerShown = true; }
+    } else if (runnerShown) { runner.remove(); runnerShown = false; }
+  }
+
   map.on('style.load', () => {
     addRouteLayers();
+    addRunLayers();
     render();
+    renderRun();
   });
 
   let clickHandler = null;
   map.on('click', (e) => clickHandler?.(e.lngLat.lat, e.lngLat.lng));
 
+  let userMove = null;
+  map.on('dragstart', () => userMove?.());
+
   return {
     map,
+    // Modo carrera: { track: [{ lat, lon, seg? }], pos: { lat, lon, acc } }
+    setRun(data) {
+      run = { ...run, ...data };
+      if (map.getLayer('run-track')) map.setPaintProperty('run-track', 'line-color', cssVar('--ink'));
+      renderRun();
+    },
+    follow(pos, zoom = 16) {
+      map.easeTo({ center: [pos.lon, pos.lat], zoom: Math.max(map.getZoom(), zoom), duration: 700 });
+    },
+    onUserMove(cb) { userMove = cb; },
+    fitTrack(points) {
+      if (!points?.length) return;
+      const b = points.reduce((acc, p) => acc.extend([p.lon, p.lat]), new maplibregl.LngLatBounds([points[0].lon, points[0].lat], [points[0].lon, points[0].lat]));
+      map.resize();
+      map.fitBounds(b, { padding: 40, duration: 0, maxZoom: 16 });
+    },
     // Coloca los marcadores A y B (sin B: bucle, solo A)
     setEndpoints(A, B, { fit = false } = {}) {
       if (A) markerA.setLngLat(ll([A.lat, A.lon])).addTo(map); else markerA.remove();

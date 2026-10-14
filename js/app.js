@@ -4,6 +4,7 @@ import { plan, googleMapsUrl, toGpx, PREFERENCES } from './planner.js';
 import { routeFoot, searchPlaces, placeName, locateCity } from './api.js';
 import { haversine } from './geo.js';
 import { createMap } from './map.js';
+import { createRunMode } from './run.js';
 import { renderProfile } from './profile.js';
 
 const $ = (id) => document.getElementById(id);
@@ -72,8 +73,10 @@ try {
   $('map-empty').innerHTML = '<p>No se pudo cargar el mapa en este navegador. Puedes generar rutas igualmente y abrirlas en Google Maps.</p>';
 }
 
+let runMode = null; // modo carrera (se crea al final, cuando ya está todo listo)
 function applyTheme() {
   mapView.setTheme(effectiveTheme());
+  runMode?.setTheme(effectiveTheme());
   if (state.current) showCandidate(state.current, { fit: false });
 }
 applyTheme();
@@ -486,3 +489,11 @@ if (!state.A) {
   $('map-empty').hidden = false;
   $('map-empty').innerHTML = '<p>Elige tu salida: pulsa <b>◎</b> para usar tu ubicación, búscala o toca el mapa.</p>';
 }
+
+// ---------------------------------------------------------------------------
+// Modo carrera: correr la ruta con el GPS del móvil
+// ---------------------------------------------------------------------------
+runMode = createRunMode({ app: 'Rutas A→B', prefix: 'rutas-ab', createMap, getTheme: effectiveTheme, track });
+$('r-run').addEventListener('click', () => {
+  if (state.current) runMode.open(state.current);
+});
