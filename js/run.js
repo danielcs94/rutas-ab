@@ -38,6 +38,41 @@ const sayPace = (p) => {
   const s = Math.round(p * 60);
   return `${Math.floor(s / 60)} ${Math.floor(s / 60) === 1 ? 'minuto' : 'minutos'}${s % 60 ? ` ${s % 60}` : ''} por kilómetro`;
 };
+// iPad con iPadOS se presenta como Mac: se reconoce por la pantalla táctil
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/.test(navigator.userAgent);
+
+// Consejos para correr con el móvil en el brazalete o el bolsillo sin pulsar nada sin querer
+const GUIDE_IOS = `
+  <h2>Antes de correr: bloquea los toques</h2>
+  <p>Una web no puede usar el GPS con el móvil bloqueado, así que la pantalla tiene que quedarse encendida.
+  Para que no se pulse nada en el bolsillo o en el brazalete, usa el <b>Acceso guiado</b> del iPhone.</p>
+  <h3>Una sola vez</h3>
+  <ol>
+    <li>Ve a <b>Ajustes › Accesibilidad › Acceso guiado</b> y actívalo.</li>
+    <li>En <b>Ajustes de código</b>, elige un código (o Face ID) para poder salir.</li>
+  </ol>
+  <h3>En cada carrera</h3>
+  <ol>
+    <li>Pulsa <b>Empezar</b> en esta pantalla.</li>
+    <li>Pulsa <b>tres veces seguidas el botón lateral</b> (o el botón de inicio) y elige <b>Acceso guiado</b>.</li>
+    <li>Rodea con el dedo <b>toda la pantalla</b> para desactivar los toques y pulsa <b>Iniciar</b>.</li>
+    <li>Para pausar o terminar: tres veces el botón lateral, tu código y <b>Finalizar</b>.</li>
+  </ol>
+  <p class="hint">Los avisos de voz siguen funcionando. Baja el brillo para gastar menos batería.</p>`;
+const GUIDE_ANDROID = `
+  <h2>Antes de correr: evita los toques sin querer</h2>
+  <p>Una web no puede usar el GPS con el móvil bloqueado, así que la pantalla tiene que quedarse encendida
+  mientras corres.</p>
+  <ol>
+    <li>Activa <b>Fijar aplicación</b> (en Ajustes › Seguridad; el nombre y el sitio cambian según la marca)
+    y fija el navegador después de pulsar <b>Empezar</b>: así no se sale de la app sin querer.</li>
+    <li>Si tu móvil tiene <b>protección contra toques accidentales</b> o <b>bloqueo de toques</b>
+    (Ajustes › Pantalla en muchos Samsung y Xiaomi), actívala.</li>
+    <li>Baja el brillo para gastar menos batería.</li>
+  </ol>
+  <p class="hint">Los avisos de voz siguen funcionando, no hace falta mirar la pantalla.</p>`;
+
 const dateLabel = (t) => new Date(t).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
   + ' · ' + new Date(t).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
@@ -69,11 +104,19 @@ const TEMPLATE = `
       <div class="run-progress" aria-hidden="true"><span id="run-progress"></span></div>
       <div class="run-controls" id="run-controls"></div>
       <p class="hint run-hint" id="run-hint"></p>
+      <button class="link-btn run-guide-link" id="run-guide-open" type="button" hidden>Cómo evitar toques sin querer</button>
       <label class="run-option"><input type="checkbox" id="run-autopause"> Pausa automática al pararte</label>
       <ol class="run-splits" id="run-splits"></ol>
     </div>
     <div id="run-summary" hidden></div>
   </div>
+  <dialog class="run-guide" id="run-guide">
+    <form method="dialog">
+      <div id="run-guide-body"></div>
+      <label class="run-option"><input type="checkbox" id="run-guide-hide"> No volver a mostrar</label>
+      <button class="primary" type="submit" autofocus>Entendido</button>
+    </form>
+  </dialog>
 </section>`;
 
 export function createRunMode({ app, prefix, createMap, getTheme, track = () => {} }) {
@@ -93,6 +136,20 @@ export function createRunMode({ app, prefix, createMap, getTheme, track = () => 
   let lastSave = 0;
   let bannerTimer = null;
   let voiceOn = store.get(VOICE_KEY, true);
+  const GUIDE_KEY = `${prefix}:guide-hide`;
+  const guideHtml = IS_IOS ? GUIDE_IOS : IS_ANDROID ? GUIDE_ANDROID : null;
+  function showGuide() {
+    if (!guideHtml) return;
+    $('run-guide-body').innerHTML = guideHtml;
+    $('run-guide-hide').checked = store.get(GUIDE_KEY, false);
+    const dlg = $('run-guide');
+    if (dlg.open) return;
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    track('carrera-consejos');
+  }
+  $('run-guide').addEventListener('close', () => store.set(GUIDE_KEY, $('run-guide-hide').checked));
+  $('run-guide-open').hidden = !guideHtml;
+  $('run-guide-open').addEventListener('click', showGuide);
   $('run-autopause').checked = store.get(AUTOPAUSE_KEY, true);
 
   // -------------------------------------------------------------------------
@@ -385,6 +442,7 @@ export function createRunMode({ app, prefix, createMap, getTheme, track = () => 
     clearInterval(tick);
     tick = setInterval(render, 1000);
     if (restored) banner('La página se recargó y la carrera quedó en pausa. Pulsa «Seguir» para continuar.', 'info', 0);
+    else if (!store.get(GUIDE_KEY, false)) showGuide();
   }
 
   function start() {
