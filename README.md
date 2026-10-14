@@ -29,8 +29,8 @@ Esta versión funciona desde cualquier punto y para cualquier distancia razonabl
   o tierra, los semáforos, el tiempo estimado y una sesión de entrenamiento que cambia si es una tirada
   larga.
 - La puedes abrir en Google Maps o descargar en GPX para Strava, Garmin o Komoot.
-- Se instala en el móvil como una app. Tiene modo claro y oscuro, y dos estilos: el clásico y uno deportivo
-  (titulares condensados en cursiva, blanco y negro y acento neón), que se cambian con el botón ⚡.
+- Se instala en el móvil como una app, con un estilo deportivo (titulares condensados en cursiva, blanco
+  y negro y acento neón) en modo claro y oscuro.
 
 ## Cómo se inventa la ruta
 
@@ -119,8 +119,9 @@ tools/
 - Una ruta larga tarda entre 20 y 30 segundos, porque los servidores gratuitos no dejan hacer muchas
   peticiones seguidas.
 - La distancia final queda entre un 90 % y un 100 % de la pedida.
-- El enlace de Google Maps lleva los mismos puntos de paso, pero Google recalcula el camino entre ellos.
-  Para seguir la ruta exacta, mejor el GPX.
+- El enlace de Google Maps lleva 9 puntos repartidos por la ruta, el máximo que admite Google, para que la
+  siga casi igual. Abierto en el navegador del móvil (y no en la app), Google solo usa 3. La ruta exacta
+  está siempre en el GPX.
 - Los caminos de los parques casi nunca tienen nombre en OpenStreetMap, así que fuera de Madrid el
   nombre de la ruta dice "X km de parque" en vez del nombre del parque.
 - La interfaz está en español.

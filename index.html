@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-style="sport">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=Barlow+Condensed:ital,wght@0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.css">
-  <link rel="stylesheet" href="css/styles.css?v=202610140242">
+  <link rel="stylesheet" href="css/styles.css?v=202610140249">
 </head>
 <body>
   <div class="app">
@@ -31,7 +31,6 @@
           <p class="sub">Rutas aleatorias para correr entre dos puntos, o en bucle, buscando parques y paseos peatonales. Hasta 42 km.</p>
         </div>
         <div class="brand-actions">
-          <button class="icon-btn" id="style-toggle" type="button" aria-pressed="false" aria-label="Cambiar entre estilo clásico y deportivo" title="Estilo deportivo">⚡</button>
           <button class="icon-btn" id="theme-toggle" type="button" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema">◐</button>
         </div>
       </header>
@@ -135,7 +134,7 @@
           <button class="secondary" id="r-gpx" type="button">Descargar GPX</button>
           <button class="secondary" id="r-copy" type="button">Copiar enlace</button>
         </div>
-        <p class="note">El enlace de Google Maps lleva los mismos puntos de paso (1, 2, 3), pero Google recalcula el camino entre ellos. Para seguir la ruta exacta, usa el GPX en Strava, Garmin o Komoot.</p>
+        <p class="note">El enlace de Google Maps lleva 9 puntos de la ruta para que Google la siga casi igual. Si lo abres en el navegador del móvil en vez de en la app, Google solo usa 3 y puede variar. La ruta exacta siempre está en el GPX, para Strava, Garmin o Komoot.</p>
       </section>
 
       <section class="list-section" id="alternatives" hidden>
@@ -170,17 +169,17 @@
   <script type="importmap">
 {
   "imports": {
-    "./js/api.js": "./js/api.js?v=202610140242",
-    "./js/app.js": "./js/app.js?v=202610140242",
-    "./js/config.js": "./js/config.js?v=202610140242",
-    "./js/geo.js": "./js/geo.js?v=202610140242",
-    "./js/map.js": "./js/map.js?v=202610140242",
-    "./js/mapstyle.js": "./js/mapstyle.js?v=202610140242",
-    "./js/planner.js": "./js/planner.js?v=202610140242",
-    "./js/profile.js": "./js/profile.js?v=202610140242"
+    "./js/api.js": "./js/api.js?v=202610140249",
+    "./js/app.js": "./js/app.js?v=202610140249",
+    "./js/config.js": "./js/config.js?v=202610140249",
+    "./js/geo.js": "./js/geo.js?v=202610140249",
+    "./js/map.js": "./js/map.js?v=202610140249",
+    "./js/mapstyle.js": "./js/mapstyle.js?v=202610140249",
+    "./js/planner.js": "./js/planner.js?v=202610140249",
+    "./js/profile.js": "./js/profile.js?v=202610140249"
   }
 }
   </script>
-  <script type="module" src="js/app.js?v=202610140242"></script>
+  <script type="module" src="js/app.js?v=202610140249"></script>
 </body>
 </html>

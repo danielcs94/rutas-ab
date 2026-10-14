@@ -60,15 +60,6 @@ const effectiveTheme = () => document.documentElement.dataset.theme || (systemDa
 const savedTheme = store.get(THEME_KEY, null);
 if (savedTheme) document.documentElement.dataset.theme = savedTheme;
 
-// Estilo visual: clásico (por defecto) o deportivo. Es independiente del claro/oscuro.
-const STYLE_KEY = 'rutas-ab:style';
-function applyStyle(style) {
-  if (style === 'sport') document.documentElement.dataset.style = 'sport';
-  else delete document.documentElement.dataset.style;
-  $('style-toggle').setAttribute('aria-pressed', String(style === 'sport'));
-  $('style-toggle').title = style === 'sport' ? 'Volver al estilo clásico' : 'Estilo deportivo';
-}
-applyStyle(store.get(STYLE_KEY, 'classic'));
 
 // Si el mapa no puede arrancar (WebGL desactivado, librería sin cargar…), la app sigue
 // funcionando sin él: se generan rutas y se abren en Google Maps o se descarga el GPX.
@@ -87,13 +78,6 @@ function applyTheme() {
 }
 applyTheme();
 systemDark.addEventListener('change', () => { if (!document.documentElement.dataset.theme) applyTheme(); });
-$('style-toggle').addEventListener('click', () => {
-  const next = document.documentElement.dataset.style === 'sport' ? 'classic' : 'sport';
-  store.set(STYLE_KEY, next);
-  applyStyle(next);
-  if (state.current) showCandidate(state.current, { fit: false }); // el trazado toma los colores del estilo
-  track(`estilo-${next}`);
-});
 $('theme-toggle').addEventListener('click', () => {
   const next = effectiveTheme() === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;

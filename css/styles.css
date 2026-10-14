@@ -414,10 +414,9 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 }
 
 .brand-actions { display: flex; gap: 6px; flex: none; }
-#style-toggle[aria-pressed="true"] { background: var(--accent, var(--ink)); color: var(--on-accent, var(--surface)); border-color: transparent; }
 
 /* ---------------------------------------------------------------------------
-   Estilo deportivo (data-style="sport"), combinable con claro y oscuro.
+   Estilo deportivo (data-style="sport" en <html>, fijo), en claro y oscuro.
    Inspirado en la estética de las marcas deportivas: titulares condensados en
    mayúscula y cursiva, blanco y negro de alto contraste, acento neón y botones
    en píldora. Sin logotipos ni tipografías de ninguna marca.

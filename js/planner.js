@@ -441,7 +441,18 @@ export async function plan({ A, B, targetKm, intensity, prefer = 'mezcla', seed 
   return { candidates: fits, directKm: direct ? direct.distance / 1000 : null };
 }
 
-// URL universal de Google Maps (abre la app en móvil, a pie) con los mismos puntos de paso.
+// URL universal de Google Maps (abre la app en el móvil, a pie). Lleva 9 puntos de la ruta real
+// repartidos a lo largo del recorrido: es el máximo de paradas intermedias que acepta Google Maps
+// (en la app y en el navegador del ordenador) y le deja muy poco margen para irse por otro camino.
+// En navegadores de móvil Google solo usa las 3 primeras; la ruta exacta siempre está en el GPX.
+export const GMAPS_WAYPOINTS = 9;
+
+export function googleMapsWaypoints(c, n = GMAPS_WAYPOINTS) {
+  const pts = c.samples?.length ? c.samples : c.coords;   // muestras cada 20 m, equiespaciadas
+  if (!pts || pts.length < n + 2) return pts?.slice(1, -1) ?? [];
+  return Array.from({ length: n }, (_, k) => pts[Math.round(((k + 1) / (n + 1)) * (pts.length - 1))]);
+}
+
 export function googleMapsUrl(c) {
   const fmt = ([a, b]) => `${a.toFixed(6)},${b.toFixed(6)}`;
   const params = new URLSearchParams({
@@ -450,8 +461,11 @@ export function googleMapsUrl(c) {
     destination: fmt([c.B.lat, c.B.lon]),
     travelmode: 'walking',
   });
-  if (c.urlPoints.length) params.set('waypoints', c.urlPoints.slice(0, 3).map(fmt).join('|'));
-  return 'https://www.google.com/maps/dir/?' + params.toString().replace(/%2C/g, ',').replace(/%7C/g, '|');
+  const wps = googleMapsWaypoints(c);
+  if (wps.length) params.set('waypoints', wps.map(fmt).join('|'));
+  // Comas y "|" codificados (%2C, %7C), como pide Google: sin codificar, su página de aviso de
+  // cookies (la primera vez que se abre en un navegador europeo) responde con error 400.
+  return `https://www.google.com/maps/dir/?${params}`;
 }
 
 export function toGpx(c) {
